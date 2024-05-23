@@ -37,7 +37,7 @@ class Processamento:
         select 'Sem classificação' as classificacao, nullif(substr(control, 1, instr(control, '_') - 1), '') as categoria, * from processamento_sem_class_df
         '''
 
-        self.processamento_class_cat_df = self._pysqldf(union_select).fillna(method='bfill')
+        self.processamento_class_cat_df = self._pysqldf(union_select).bfill()
         self.processamento_class_cat_df['processamento_id'] = self.processamento_class_cat_df.index + 1
 
         self._criar_processamento_categoria()
