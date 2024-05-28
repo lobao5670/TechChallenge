@@ -1,8 +1,7 @@
 from fastapi import FastAPI
-from mangum import Mangum
+from app.api.api import router as api_router
 
 app = FastAPI()
-handler = Mangum(app)
 
 
 @app.get("/")
@@ -10,6 +9,4 @@ async def root():
     return {"message": "Hello World"}
 
 
-@app.get("/hello/{name}")
-async def say_hello(name: str):
-    return {"message": f"Hello {name}"}
+app.include_router(api_router, prefix="/api")
