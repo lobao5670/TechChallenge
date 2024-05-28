@@ -31,13 +31,17 @@ class Producao:
 
         add_categoria = '''
         select
-          nullif(substr(control, 1, instr(control, '_') - 1), '') as categoria,
+          case 
+            when ifnull(control, produto) = produto then produto
+            else null
+          end as categoria,
           *
         from
           _producao_df
         '''
 
-        self._producao_add_categoria_df = self._pysqldf(add_categoria).bfill()
+        self._producao_add_categoria_df = self._pysqldf(add_categoria)
+        self._producao_add_categoria_df['categoria'] = self._producao_add_categoria_df['categoria'].ffill()
 
         self._criar_producao_categoria()
         self._criar_producao_produto()
@@ -66,7 +70,7 @@ class Producao:
         from
           _producao_add_categoria_df
         where
-          control = produto
+          ifnull(control, produto) = produto
         '''
 
         self._producao_categorias_df = self._pysqldf(producao_categorias)
