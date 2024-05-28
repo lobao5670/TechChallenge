@@ -3,9 +3,21 @@ from pandasql import sqldf
 
 
 class Comercio:
-    comercio_produtos_df: pd.DataFrame
-    comercio_categorias_df: pd.DataFrame
-    comercio_anos_df: pd.DataFrame
+    _comercio_produtos_df: pd.DataFrame
+    _comercio_categorias_df: pd.DataFrame
+    _comercio_anos_df: pd.DataFrame
+
+    @property
+    def produtos(self):
+        return self._comercio_produtos_df.to_json(orient='records')
+
+    @property
+    def categorias(self):
+        return self._comercio_categorias_df.to_json(orient='records')
+
+    @property
+    def anos(self):
+        return self._comercio_anos_df.to_json(orient='records')
 
     def _pysqldf(self, query):
         return sqldf(query, vars(self))
@@ -15,7 +27,7 @@ class Comercio:
 
     def _iniciar_comercio(self):
         comercializacao_url = "http://vitibrasil.cnpuv.embrapa.br/download/Comercio.csv"
-        self.comercializacao_df = pd.read_csv(comercializacao_url, delimiter=';')
+        self._comercializacao_df = pd.read_csv(comercializacao_url, delimiter=';')
 
         add_categoria = '''
         select
@@ -25,11 +37,11 @@ class Comercio:
           end as categoria,
           *
         from
-          comercializacao_df
+          _comercializacao_df
         '''
 
-        self.comercio_add_categoria_df = self._pysqldf(add_categoria)
-        self.comercio_add_categoria_df['categoria'] = self.comercio_add_categoria_df['categoria'].ffill()
+        self._comercio_add_categoria_df = self._pysqldf(add_categoria)
+        self._comercio_add_categoria_df['categoria'] = self._comercio_add_categoria_df['categoria'].ffill()
 
         self._criar_comercio_categoria()
         self._criar_comercio_produto()
@@ -42,12 +54,12 @@ class Comercio:
           categoria,
           produto
         from
-          comercio_add_categoria_df
+          _comercio_add_categoria_df
         where
           control <> produto
         '''
 
-        self.comercio_produtos_df = self._pysqldf(comercio_produto)
+        self._comercio_produtos_df = self._pysqldf(comercio_produto)
 
     def _criar_comercio_categoria(self):
         comercio_categorias = '''
@@ -55,16 +67,16 @@ class Comercio:
           id,
           categoria
         from
-          comercio_add_categoria_df
+          _comercio_add_categoria_df
         where
           ifnull(control, produto) = produto
         '''
 
-        self.comercio_categorias_df = self._pysqldf(comercio_categorias)
+        self._comercio_categorias_df = self._pysqldf(comercio_categorias)
 
     def _criar_comercio_ano(self):
-        self.comercio_anos_df = (
-            self.comercializacao_df
+        self._comercio_anos_df = (
+            self._comercializacao_df
             .drop(['control', 'Produto'], axis=1)
             .melt(
                 id_vars=['id'],
