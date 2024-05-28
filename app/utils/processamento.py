@@ -3,9 +3,21 @@ from pandasql import sqldf
 
 
 class Processamento:
-    processamento_anos_df: pd.DataFrame
-    processamento_categoria_df: pd.DataFrame
-    processamento_cultivar_df: pd.DataFrame
+    _processamento_anos_df: pd.DataFrame
+    _processamento_categoria_df: pd.DataFrame
+    _processamento_cultivar_df: pd.DataFrame
+
+    @property
+    def produtos(self):
+        return self._processamento_cultivar_df.to_json(orient='records')
+
+    @property
+    def categorias(self):
+        return self._processamento_categoria_df.to_json(orient='records')
+
+    @property
+    def anos(self):
+        return self._processamento_anos_df.to_json(orient='records')
 
     def _pysqldf(self, query):
         return sqldf(query, vars(self))
@@ -19,29 +31,29 @@ class Processamento:
         processamento_mesa_url = "http://vitibrasil.cnpuv.embrapa.br/download/ProcessaMesa.csv"
         processamento_sem_class_url = "http://vitibrasil.cnpuv.embrapa.br/download/ProcessaSemclass.csv"
 
-        self.processamento_viniferas_df = pd.read_csv(processamento_viniferas_url, delimiter='\t')
-        self.processamento_americanas_df = pd.read_csv(processamento_americanas_url, delimiter='\t')
-        self.processamento_mesa_df = pd.read_csv(processamento_mesa_url, delimiter='\t')
-        self.processamento_sem_class_df = pd.read_csv(processamento_sem_class_url, delimiter='\t')
+        self._processamento_viniferas_df = pd.read_csv(processamento_viniferas_url, delimiter='\t')
+        self._processamento_americanas_df = pd.read_csv(processamento_americanas_url, delimiter='\t')
+        self._processamento_mesa_df = pd.read_csv(processamento_mesa_url, delimiter='\t')
+        self._processamento_sem_class_df = pd.read_csv(processamento_sem_class_url, delimiter='\t')
 
         union_select = '''
-        select 'Viníferas' as classificacao, nullif(substr(control, 1, instr(control, '_') - 1), '') as categoria, * from processamento_viniferas_df
+        select 'Viníferas' as classificacao, nullif(substr(control, 1, instr(control, '_') - 1), '') as categoria, * from _processamento_viniferas_df
 
         union all
 
-        select 'Americanas e híbridas' as classificacao, nullif(substr(control, 1, instr(control, '_') - 1), '') as categoria, * from processamento_americanas_df
+        select 'Americanas e híbridas' as classificacao, nullif(substr(control, 1, instr(control, '_') - 1), '') as categoria, * from _processamento_americanas_df
 
         union all
 
-        select 'Uvas de mesa' as classificacao, nullif(substr(control, 1, instr(control, '_') - 1), '') as categoria, * from processamento_mesa_df
+        select 'Uvas de mesa' as classificacao, nullif(substr(control, 1, instr(control, '_') - 1), '') as categoria, * from _processamento_mesa_df
 
         union all
 
-        select 'Sem classificação' as classificacao, nullif(substr(control, 1, instr(control, '_') - 1), '') as categoria, * from processamento_sem_class_df
+        select 'Sem classificação' as classificacao, nullif(substr(control, 1, instr(control, '_') - 1), '') as categoria, * from _processamento_sem_class_df
         '''
 
-        self.processamento_class_cat_df = self._pysqldf(union_select).bfill()
-        self.processamento_class_cat_df['processamento_id'] = self.processamento_class_cat_df.index + 1
+        self._processamento_class_cat_df = self._pysqldf(union_select).bfill()
+        self._processamento_class_cat_df['processamento_id'] = self._processamento_class_cat_df.index + 1
 
         self._criar_processamento_categoria()
         self._criar_processamento_cultivar()
@@ -52,8 +64,8 @@ class Processamento:
         # Os dados disponibilizados pelo SISDEVIN no ano de 2022 estão agregados
         # [Uvas viníferas: 99.738.086; Uvas americanas ou híbridas: 565.243.922]
 
-        self.processamento_anos_df = (
-            self.processamento_class_cat_df
+        self._processamento_anos_df = (
+            self._processamento_class_cat_df
             .drop(
                 ['id', 'classificacao', 'categoria', 'control', 'cultivar', '2022']
                 , axis=1
@@ -73,12 +85,12 @@ class Processamento:
           categoria,
           cultivar
         from
-          processamento_class_cat_df
+          _processamento_class_cat_df
         where
           control not like '%!_%' escape '!'
         '''
 
-        self.processamento_categoria_df = self._pysqldf(processamento_categoria)
+        self._processamento_categoria_df = self._pysqldf(processamento_categoria)
 
     def _criar_processamento_cultivar(self):
         processamento_cultivar = '''
@@ -88,9 +100,9 @@ class Processamento:
           categoria,
           cultivar
         from
-          processamento_class_cat_df
+          _processamento_class_cat_df
         where
           control like '%!_%' escape '!'
         '''
 
-        self.processamento_cultivar_df = self._pysqldf(processamento_cultivar)
+        self._processamento_cultivar_df = self._pysqldf(processamento_cultivar)
