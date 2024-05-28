@@ -9,15 +9,46 @@ class Producao:
 
     @property
     def produtos(self):
-        return self._producao_produtos_df.to_json(orient='records')
+        return self._producao_produtos_df.drop(['id'], axis=1).to_json(orient='records')
 
     @property
     def categorias(self):
-        return self._producao_categorias_df.to_json(orient='records')
+        return self._producao_categorias_df.drop(['id'], axis=1).to_json(orient='records')
 
-    @property
-    def anos(self):
-        return self._producao_anos_df.to_json(orient='records')
+    def produto_by_ano(self, ano):
+        select_produto_by_ano = f'''
+        select
+            p.categoria,
+            p.produto,
+            a.ano,
+            a.quantidade
+        from
+            _producao_produtos_df as p
+
+            inner join _producao_anos_df as a 
+                on a.id = p.id
+        where 
+            a.ano = {ano}
+        '''
+
+        return self._pysqldf(select_produto_by_ano).to_json(orient='records')
+
+    def categoria_by_ano(self, ano):
+        select_categoria_by_ano = f'''
+        select
+            c.categoria,
+            a.ano,
+            a.quantidade
+        from
+            _producao_categorias_df as c
+
+            inner join _producao_anos_df as a 
+                on a.id = c.id
+        where 
+            a.ano = {ano}
+        '''
+
+        return self._pysqldf(select_categoria_by_ano).to_json(orient='records')
 
     def _pysqldf(self, query):
         return sqldf(query, vars(self))
@@ -65,8 +96,7 @@ class Producao:
         producao_categorias = '''
         select
           id,
-          categoria,
-          produto
+          categoria
         from
           _producao_add_categoria_df
         where
