@@ -4,8 +4,16 @@ from unidecode import unidecode
 
 
 class Importacao:
-    quantidade_importacao_df: pd.DataFrame
-    valores_importacao_df: pd.DataFrame
+    _quantidade_importacao_df: pd.DataFrame
+    _valores_importacao_df: pd.DataFrame
+
+    @property
+    def quantidade(self):
+        return self._quantidade_importacao_df.to_json(orient='records')
+
+    @property
+    def valor(self):
+        return self._valores_importacao_df.to_json(orient='records')
 
     def _pysqldf(self, query):
         return sqldf(query, vars(self))
@@ -20,44 +28,44 @@ class Importacao:
         imp_passa_url = "http://vitibrasil.cnpuv.embrapa.br/download/ImpPassas.csv"
         imp_suco_url = "http://vitibrasil.cnpuv.embrapa.br/download/ImpSuco.csv"
 
-        self.imp_vinho_df = pd.read_csv(imp_vinho_url, delimiter=';')
-        self.imp_espumante_df = pd.read_csv(imp_espumante_url, delimiter=';')
-        self.imp_fresca_df = pd.read_csv(imp_fresca_url, delimiter=';')
-        self.imp_passa_df = pd.read_csv(imp_passa_url, delimiter=';')
-        self.imp_suco_df = pd.read_csv(imp_suco_url, delimiter=';')
+        self._imp_vinho_df = pd.read_csv(imp_vinho_url, delimiter=';')
+        self._imp_espumante_df = pd.read_csv(imp_espumante_url, delimiter=';')
+        self._imp_fresca_df = pd.read_csv(imp_fresca_url, delimiter=';')
+        self._imp_passa_df = pd.read_csv(imp_passa_url, delimiter=';')
+        self._imp_suco_df = pd.read_csv(imp_suco_url, delimiter=';')
 
         union_select = '''
-        select 'Vinho de Mesa' as classificacao, * from imp_vinho_df
+        select 'Vinho de Mesa' as classificacao, * from _imp_vinho_df
 
         union all
 
-        select 'Espumantes' as classificacao, * from imp_espumante_df
+        select 'Espumantes' as classificacao, * from _imp_espumante_df
 
         union all
 
-        select 'Uvas frescas' as classificacao, * from imp_fresca_df
+        select 'Uvas frescas' as classificacao, * from _imp_fresca_df
 
         union all
 
-        select 'Uvas passas' as classificacao, * from imp_passa_df
+        select 'Uvas passas' as classificacao, * from _imp_passa_df
 
         union all
 
-        select 'Suco de uva' as classificacao, * from imp_suco_df
+        select 'Suco de uva' as classificacao, * from _imp_suco_df
         '''
 
-        self.imp_class_df = self._pysqldf(union_select)
-        self.imp_class_df['importacao_id'] = self.imp_class_df.index + 1
-        self.imp_class_df['pais'] = self.imp_class_df['País'].apply(lambda x: unidecode(x))
+        self._imp_class_df = self._pysqldf(union_select)
+        self._imp_class_df['importacao_id'] = self._imp_class_df.index + 1
+        self._imp_class_df['pais'] = self._imp_class_df['País'].apply(lambda x: unidecode(x))
 
         self._criar_quantidade_importacao()
         self._criar_valores_importacao()
 
     def _criar_quantidade_importacao(self):
-        self.quantidade_importacao_df = (
-            self.imp_class_df
+        self._quantidade_importacao_df = (
+            self._imp_class_df
             .drop(
-                [col for col in self.imp_class_df.columns if '.1' in col or col in ['Id', 'País', 'importacao_id']],
+                [col for col in self._imp_class_df.columns if '.1' in col or col in ['Id', 'País', 'importacao_id']],
                 axis=1
             )
             .melt(
@@ -68,10 +76,10 @@ class Importacao:
         )
 
     def _criar_valores_importacao(self):
-        self.valores_importacao_df = (
-            self.imp_class_df
+        self._valores_importacao_df = (
+            self._imp_class_df
             .drop(
-                [col for col in self.imp_class_df.columns if col.isnumeric() or col in ['Id', 'País', 'importacao_id']],
+                [col for col in self._imp_class_df.columns if col.isnumeric() or col in ['Id', 'País', 'importacao_id']],
                 axis=1
             )
             .melt(
@@ -81,4 +89,4 @@ class Importacao:
             )
         )
 
-        self.valores_importacao_df['ano'] = self.valores_importacao_df['ano'].apply(lambda ano: ano.replace('.1', ''))
+        self._valores_importacao_df['ano'] = self._valores_importacao_df['ano'].apply(lambda ano: ano.replace('.1', ''))
