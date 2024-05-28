@@ -9,15 +9,48 @@ class Processamento:
 
     @property
     def produtos(self):
-        return self._processamento_cultivar_df.to_json(orient='records')
+        return self._processamento_cultivar_df.drop(['processamento_id'], axis=1).to_json(orient='records')
 
     @property
     def categorias(self):
-        return self._processamento_categoria_df.to_json(orient='records')
+        return self._processamento_categoria_df.drop(['processamento_id'], axis=1).to_json(orient='records')
 
-    @property
-    def anos(self):
-        return self._processamento_anos_df.to_json(orient='records')
+    def produto_by_ano(self, ano):
+        select_produto_by_ano = f'''
+        select
+            p.classificacao,
+            p.categoria,
+            p.produto,
+            a.ano,
+            a.quantidade
+        from
+            _processamento_cultivar_df as p
+
+            inner join _processamento_anos_df as a 
+                on a.processamento_id = p.processamento_id
+        where 
+            a.ano = {ano}
+        '''
+
+        return self._pysqldf(select_produto_by_ano).to_json(orient='records')
+
+    def categoria_by_ano(self, ano):
+        select_categoria_by_ano = f'''
+        select
+            c.classificacao,
+            c.categoria,
+            a.ano,
+            a.quantidade
+        from
+            _processamento_categoria_df as c
+
+            inner join _processamento_anos_df as a 
+                on a.processamento_id = c.processamento_id
+        where 
+            a.ano = {ano}
+        '''
+
+        return self._pysqldf(select_categoria_by_ano).to_json(orient='records')
 
     def _pysqldf(self, query):
         return sqldf(query, vars(self))
@@ -37,22 +70,23 @@ class Processamento:
         self._processamento_sem_class_df = pd.read_csv(processamento_sem_class_url, delimiter='\t')
 
         union_select = '''
-        select 'Viníferas' as classificacao, nullif(substr(control, 1, instr(control, '_') - 1), '') as categoria, * from _processamento_viniferas_df
+        select 'Viníferas' as classificacao, case when control like '%!_%' escape '!' then null else cultivar end as categoria, * from _processamento_viniferas_df
 
         union all
 
-        select 'Americanas e híbridas' as classificacao, nullif(substr(control, 1, instr(control, '_') - 1), '') as categoria, * from _processamento_americanas_df
+        select 'Americanas e híbridas' as classificacao, case when control like '%!_%' escape '!' then null else cultivar end as categoria, * from _processamento_americanas_df
 
         union all
 
-        select 'Uvas de mesa' as classificacao, nullif(substr(control, 1, instr(control, '_') - 1), '') as categoria, * from _processamento_mesa_df
+        select 'Uvas de mesa' as classificacao, case when control like '%!_%' escape '!' then null else cultivar end as categoria, * from _processamento_mesa_df
 
         union all
 
-        select 'Sem classificação' as classificacao, nullif(substr(control, 1, instr(control, '_') - 1), '') as categoria, * from _processamento_sem_class_df
+        select 'Sem classificação' as classificacao, case when control like '%!_%' escape '!' then null else cultivar end as categoria, * from _processamento_sem_class_df
         '''
 
-        self._processamento_class_cat_df = self._pysqldf(union_select).bfill()
+        self._processamento_class_cat_df = self._pysqldf(union_select)
+        self._processamento_class_cat_df['categoria'] = self._processamento_class_cat_df['categoria'].ffill()
         self._processamento_class_cat_df['processamento_id'] = self._processamento_class_cat_df.index + 1
 
         self._criar_processamento_categoria()
@@ -82,8 +116,7 @@ class Processamento:
         select
           processamento_id,
           classificacao,
-          categoria,
-          cultivar
+          categoria
         from
           _processamento_class_cat_df
         where
@@ -98,7 +131,7 @@ class Processamento:
           processamento_id,
           classificacao,
           categoria,
-          cultivar
+          cultivar as produto
         from
           _processamento_class_cat_df
         where
