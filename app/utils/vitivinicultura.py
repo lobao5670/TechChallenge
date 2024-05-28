@@ -1,8 +1,8 @@
-from utils.comercio import Comercio
-from utils.exportacao import Exportacao
-from utils.importacao import Importacao
-from utils.processamento import Processamento
-from utils.producao import Producao
+from app.utils.comercio import Comercio
+from app.utils.exportacao import Exportacao
+from app.utils.importacao import Importacao
+from app.utils.processamento import Processamento
+from app.utils.producao import Producao
 
 
 class Vitivinicultura:
