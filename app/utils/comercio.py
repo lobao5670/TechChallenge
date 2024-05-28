@@ -3,6 +3,9 @@ from pandasql import sqldf
 
 
 class Comercio:
+    comercio_produtos_df: pd.DataFrame
+    comercio_categorias_df: pd.DataFrame
+    comercio_anos_df: pd.DataFrame
 
     def _pysqldf(self, query):
         return sqldf(query, vars(self))

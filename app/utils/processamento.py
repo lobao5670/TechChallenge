@@ -3,6 +3,9 @@ from pandasql import sqldf
 
 
 class Processamento:
+    processamento_anos_df: pd.DataFrame
+    processamento_categoria_df: pd.DataFrame
+    processamento_cultivar_df: pd.DataFrame
 
     def _pysqldf(self, query):
         return sqldf(query, vars(self))

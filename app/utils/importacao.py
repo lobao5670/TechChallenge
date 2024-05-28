@@ -4,6 +4,8 @@ from unidecode import unidecode
 
 
 class Importacao:
+    quantidade_importacao_df: pd.DataFrame
+    valores_importacao_df: pd.DataFrame
 
     def _pysqldf(self, query):
         return sqldf(query, vars(self))

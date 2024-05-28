@@ -3,6 +3,9 @@ from pandasql import sqldf
 
 
 class Producao:
+    producao_produtos_df: pd.DataFrame
+    producao_categorias_df: pd.DataFrame
+    producao_anos_df: pd.DataFrame
 
     def _pysqldf(self, query):
         return sqldf(query, vars(self))

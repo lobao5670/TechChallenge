@@ -6,6 +6,11 @@ from app.utils.producao import Producao
 
 
 class Vitivinicultura:
+    producao: Producao
+    processamento: Processamento
+    comercio: Comercio
+    importacao: Importacao
+    exportacao: Exportacao
 
     def __init__(self):
         self.producao = Producao()

@@ -4,6 +4,8 @@ from unidecode import unidecode
 
 
 class Exportacao:
+    quantidade_exportacao_df: pd.DataFrame
+    valores_exportacao_df: pd.DataFrame
 
     def _pysqldf(self, query):
         return sqldf(query, vars(self))
